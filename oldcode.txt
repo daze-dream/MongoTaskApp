@@ -1,0 +1,22 @@
+original code to insert things
+    // db.collection('tasks').insertMany([
+    //     {
+    //         description: 'gather morning dew for the weathermancer',
+    //         completed: true
+    //     },
+    //     {
+    //         description: 'collect four crickets for the weathermancer',
+    //         completed: false
+    //     }
+    // ], (error, result) => {
+    //     if(error)
+    //         console.log('unable to add data');
+    //     console.log(result.insertedIds)
+    // })
+    // db.collection('users').insertOne( {
+    //     _id: id,
+    //     name: 'Kalissa',
+    //     age: 99
+    // }, (error, result) => {
+    //     console.log(result.insertedId)
+    // })
