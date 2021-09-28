@@ -20,3 +20,51 @@ original code to insert things
     // }, (error, result) => {
     //     console.log(result.insertedId)
     // })
+
+original code for finding things
+    //mongodb automatically creates a new collection if it doesn't exist as well.
+    //can "SELECT" with a JSON collection object specifying parameters. If want to search by _id, wrap the string in 'new objectID()'
+    db.collection('users').findOne( {name: 'Kalissa'}, (error, data) => {
+        if(error)
+            console.log('error with database');
+        console.log(data);
+    })
+    //when finding multiple, we get a cursor (pointer) to the data instead, that we can then call operations on - that's where the callback funtion exists.
+    // EX: here we use toArray, but can use count or limit to a specific number so we don't have to store everything in memory.
+    db.collection('tasks').find({completed: false}).toArray( (error, data) => {
+        console.log(data);
+
+original code for updating
+
+    // db.collection('users').updateOne({
+    //     _id: new ObjectID("61535012018de8f3d55791f2")
+    // }, {
+    //     $set: {
+    //         name: 'Roxia'
+    //     }
+    // }).then((result) => {
+    //     console.log(result);
+
+    // }).catch((error) => {
+    //     console.log(error);
+    // })
+    db.collection('tasks').updateMany({
+        completed: false
+    }, {
+        $set: {
+            completed: true
+        }
+    }).then((result) => {
+        console.log(result.modifiedCount)
+    }).catch((error) => {
+        console.log(error)
+    })
+
+original code for deleting objects
+    db.collection('users').deleteMany({
+        age: 87
+    }).then((result)=> {
+        console.log(result)
+    }).catch((error) => {
+        console.log(error)
+    })
