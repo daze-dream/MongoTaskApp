@@ -18,6 +18,8 @@ mongoClient.connect(connectionURL, {useNewUrlParser:true }, (error, client) => {
             console.log('error with database');
         console.log(data);
     })
+    //when finding multiple, we get a cursor (pointer) to the data instead, that we can then call operations on - that's where the callback funtion exists.
+    // EX: here we use toArray, but can use count or limit to a specific number so we don't have to store everything in memory.
     db.collection('tasks').find({completed: false}).toArray( (error, data) => {
         console.log(data);
     })
