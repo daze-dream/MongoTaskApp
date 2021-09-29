@@ -24,20 +24,6 @@ app.post('/users', (req, res) => {
     
 })
 
-app.post('/tasks', (req, res) => {
-    const task = new Task(req.body);
-    task.save().then(()=> {
-        console.log('Successful save from request: ', req.body)
-        res.status(201).send(task);
-    }).catch((e)=> {
-        console.log('Error from request: ', req.body)
-        res.status(400).send(e);
-    })
-    
-})
-
-
-
 app.get('/users', (req, res) => {
     User.find({}).then((users) => {
         console.log('successful querying of all users');
@@ -66,6 +52,19 @@ app.get('/users/:id', (req, res) => {
     });
     console.log(req.params);
 })
+
+app.post('/tasks', (req, res) => {
+    const task = new Task(req.body);
+    task.save().then(()=> {
+        console.log('Successful save from request: ', req.body)
+        res.status(201).send(task);
+    }).catch((e)=> {
+        console.log('Error from request: ', req.body)
+        res.status(400).send(e);
+    })
+    
+})
+
 
 app.get('/tasks', (req, res) => {
     Task.find({}).then((tasks) => {
