@@ -14,7 +14,7 @@ app.post('/users', (req, res) => {
     const user = new User(req.body);
     user.save().then(() => {
         console.log('Successful save from request: ', req.body)
-        res.send(user);
+        res.status(201).send(user);
     }).catch((e) => {
         console.log('Error from request: ', req.body)
         res.status(400).send(e);
@@ -26,11 +26,15 @@ app.post('/tasks', (req, res) => {
     const task = new Task(req.body);
     task.save().then(()=> {
         console.log('Successful save from request: ', req.body)
-        res.send(task);
+        res.status(201).send(task);
     }).catch((e)=> {
         console.log('Error from request: ', req.body)
         res.status(400).send(e);
     })
+    
+})
+
+app.get('/users', (req, res) => {
     
 })
 
