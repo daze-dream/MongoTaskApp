@@ -1,0 +1,14 @@
+stands for Representational State Transfer API
+API is simply tools that let you build an application. Very broad.
+
+lets client use and manipulate resources using premade functions
+building a front end for something they want users to mess with
+
+Representation: simply a representation of what's in the database
+State Transfer: state transferred from server to client (data, operations, authentication)
+
+So what functions do we need to expose to the client? For our task...
+    Create: POST /tasks
+    Read: GET /tasks(/:id for one single task)
+    Update: PATCH /tasks/:id
+    Delete: DELETE /tasks/:id
