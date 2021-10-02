@@ -24,6 +24,18 @@ router.post('/users', async (req, res) => {
     };
 })
 
+//log in users
+router.post('/users/login', async (req, res) => {
+    try {
+        const user =  await User.findByCredentials(req.body.email, req.body.password);
+        console.log(user);
+        res.send(user);
+    } catch (e) {
+        res.send(e);
+    }
+
+})
+
 //get all users (NOT SAFE)
 router.get('/users',  async(req, res) => {
     var dateOBJ = new Date();
