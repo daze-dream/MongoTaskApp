@@ -79,15 +79,21 @@ router.patch('/users/:id', async (req, res) => {
         return res.status(400).send({'error': 'invalid params'})
     }
     try {
-        const user =  await User.findByIdAndUpdate(req.params.id, req.body, {new:true, runValidators: true});
+        const user = await User.findById(req.params.id);
+        //const user =  await User.findByIdAndUpdate(req.params.id, req.body, {new:true, runValidators: true});
         if(!user) {
             console.log(date + '/' + time + ': no user found for request: ', req.params.id);
             return res.status(404).send({'error': 'no such user found'});
         }
+        //this method is used instead to have access to the middleware, which findByIdAndUpdate bypasses.
+        // simply iterate through the two arrays and apply them
+        updates.forEach((update) => user[update] = req.body[update])
+        await user.save()
         console.log(date + '/' + time + ': successful update of user ' + req.params.id + ' to ' + user);
         res.send(user);
     } catch (e) {
         console.log( date + '/' + time +': Error from request: ', req.body)
+        console.log(e )
         res.status(400).send(e);
     }
 })

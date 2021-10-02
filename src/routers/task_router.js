@@ -77,11 +77,14 @@ router.patch('/tasks/:id', async (req, res) => {
         return res.status(400).send({'error': 'invalid params'})
     }
     try {
-        const task = await Task.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true });
+        const task = await Task.findById(req.params.id);
+        //const task = await Task.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true });
         if(!task) {
             console.log(date + '/' + time + ': no task found for request: ', req.params.id);
             return res.status(404).send({'error': 'no such task exists'});
         }
+        updates.forEach((update) => task[update] = req.body[update]);
+        await task.save();
         console.log(date + '/' + time + ': successful update of task ' + req.params.id + ' to ' + task);
         res.send(task)
     } catch (e) {
