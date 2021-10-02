@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const {default: validator} = require('validator');
+const bcrypt = require('bcryptjs')
 
-const User = mongoose.model('User', {
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -36,5 +37,18 @@ const User = mongoose.model('User', {
         }
     }
 })
+
+userSchema.pre('save', async function (next) {
+    const user = this;
+    console.log('just before saving')
+    //isModified tells us if the field has been changed. Useful for if we want the password to be hased only after user creation or change pass.
+    if(user.isModified('password')) {
+        user.password = await bcrypt.hash(user.password, 8)
+    }
+    //this is to tell the function that we're done with the pre-function, and to proceed with the program
+    next();
+})
+
+const User = mongoose.model('User', userSchema)
 
 module.exports = User;
