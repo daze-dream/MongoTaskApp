@@ -7,7 +7,6 @@ const auth = async (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '');
         const decoded = jwt.verify(token, 'anthemsux');
         const user = await User.findOne({_id: decoded._id, 'tokens.token': token})
-        console.log(decoded);
         if(!user) { throw new Error();};
         //these are the variables being passed back to the route handler
         req.token = token;

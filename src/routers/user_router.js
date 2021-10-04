@@ -4,24 +4,28 @@ const auth = require('../middleware/auth')
 //---------------------------------------------------------
 const router = new express.Router()
 
+/**helper function to log to console. Provides formatting with date and time*/
+const logToConsole = (message) => {
+    var dateOBJ = new Date();
+    var date = dateOBJ.toLocaleDateString();
+    var time = dateOBJ.toLocaleTimeString();
+    console.log(date + '/' + time + ': ' + message)
+}
+
 router.get(('/test'), (req, res) => {
     res.send('new file babeh')
 })
 
 //create users 
 router.post('/users', async (req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
     const user = new User(req.body);
     try{
         await user.save();
         const token = await user.generateAuthToken();
         res.status(201).send({user, token});
-        console.log(date + '/' + time + ': successful creation of user: ', user)
+        logToConsole('successful creation of user ' + JSON.stringify(user))
     } catch(e) {
-        console.log( date + '/' + time + ': Bad new user creation from: ', req.body)
-        console.log(e);
+        logToConsole('bad creation of user from request ' + JSON.stringify( req.body))
         res.status(400).send('This email already has an associated account with it.');
     };
 })
@@ -31,12 +35,11 @@ router.post('/users/login', async (req, res) => {
     try {
         const user =  await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
-        console.log({user, token});
-        // console.log('cats')
-        //console.log(user.getPublicProfile());
+        logToConsole('successful login from user ' + user.email + ' with token ' + token )
         res.send({user, token});
     } catch (e) {
-        res.send(e);
+        logToConsole('bad login request from ' + req.body.email)
+        res.status(404).send('Invalid email or password');
     }
 
 })
@@ -45,11 +48,12 @@ router.post('/users/login', async (req, res) => {
 router.post('/users/logout', auth, async (req, res) => {
     try {
         //this filters the user token array to contain things that are not that token.
-        //console.log(req.user.tokens);
         req.user.tokens = req.user.tokens.filter((token) => {return token.token != req.token});
         await req.user.save();
+        logToConsole('user ' + req.user.email + ' has logged out. ' + req.token + ' removed.');
         res.send('You have logged out.');
     } catch (e) {
+        logToConsole('Internal error from path POST/users/logout with error' + JSON.stringify(e))
         res.status(500).send(e);
     }
 })
@@ -59,63 +63,31 @@ router.post('/users/logoutall', auth, async (req, res) => {
     try {
         req.user.tokens = [];
         await req.user.save();
+        logToConsole('user' + req.user.email + ' has logged out of all devices')
         res.send('You have successfully logged out of all signed in devices');
     } catch (e) {
+        logToConsole('Internal error from path POST/users/logoutall with error' + JSON.stringify(e))
         res.status(500).send(e);
     }
 })
 
-//get all users (NOT SAFE)
+//[deprecated] get all users (NOT SAFE)
 //middleware runs first, then if next executes the rest of the function does
-router.get('/users', auth, async(req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
-    try {
-        const user = await User.find({});
-
-        console.log(date + '/' + time + ': successful querying of all users');
-        res.send(user);
-    } catch (e) {
-        console.log( date + '/' + time + ': internal server error', e);
-        res.status(500).send(e);
-        
-    }
+router.get('/users', async(req, res) => {
+    logToConsole('deprecated request to get all users.')
+    res.status(410).send('This route is no longer supported.')
 })
 
-// a user can get their profile back
+// a user can get their profile
 router.get('/users/me', auth, async(req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
     res.send(req.user);
-    console.log(date + '/' + time + ': user successfully queried own profile');
+    logToConsole('user ' + req.user.email + 'successfully queried their own profile.')
     }
 )
 
 //get one user by ID
 router.get('/users/:id', async (req, res) => {
-    const _id = req.params.id;
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
-    try {
-        const user = await User.findById(_id);
-        if(!user){
-            console.log(date + '/' + time + ': Bad user search by ID: ', _id);
-            return res.status(404).send('No user found');
-        }
-
-        console.log(date + '/' + time + ': successful query of user with ID' + _id)
-        res.send(user)
-    } catch (e) {
-        if(e.name === 'CastError'){
-            return res.status(400).send('Invalid id')
-        }
-        console.log( date + '/' + time +': internal server error', e);
-        res.status(500).send(e)
-
-    }
+    res.status(410).send('This route is no longer supported')
 })
 
 
@@ -144,27 +116,21 @@ router.patch('/users/:id', async (req, res) => {
         console.log(date + '/' + time + ': successful update of user ' + req.params.id + ' to ' + user);
         res.send(user);
     } catch (e) {
-        console.log( date + '/' + time +': Error from request: ', req.body)
-        console.log(e )
+        logToConsole('Error from request: ' + JSON.stringify(req.body))
         res.status(400).send(e);
     }
 })
 
 //delete users
-router.delete('/users/:id', async (req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
+router.delete('/users/me', auth, async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if(!user) {
-            console.log(date + '/' + time + ": bad user deletion request with ID: ", req.params.id);
-            return res.status(404).send({'error': 'no such user exists'})
-        }
-        console.log(date + '/' + time + ': successful deletion of user: ', user);
-        res.send(user)
+        logToConsole('user ' + req.user.email + ' has requested profile deletion...');
+        await req.user.remove();
+        res.send('Profile deleted. This cannot be undone.');
+        logToConsole('successful deletion');
+
     } catch (e) {
-        console.log(date + '/' + time + ': server error from request', req.body);
+        logToConsole('server error from request ' + JSON.stringify(req.body));
         res.status(500).send(e);
     }
 })
