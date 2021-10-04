@@ -1,6 +1,7 @@
 const express = require('express')
 const User = require('../models/user')
-
+const auth = require('../middleware/auth')
+//---------------------------------------------------------
 const router = new express.Router()
 
 router.get(('/test'), (req, res) => {
@@ -14,13 +15,14 @@ router.post('/users', async (req, res) => {
     var time = dateOBJ.toLocaleTimeString();
     const user = new User(req.body);
     try{
-        await user.save(); 
-        res.status(201).send(user);
-
+        await user.save();
+        const token = await user.generateAuthToken();
+        res.status(201).send({user, token});
         console.log(date + '/' + time + ': successful creation of user: ', user)
     } catch(e) {
-        res.status(400).send(e);
         console.log( date + '/' + time + ': Bad new user creation from: ', req.body)
+        console.log(e);
+        res.status(400).send('This email already has an associated account with it.');
     };
 })
 
@@ -28,16 +30,44 @@ router.post('/users', async (req, res) => {
 router.post('/users/login', async (req, res) => {
     try {
         const user =  await User.findByCredentials(req.body.email, req.body.password);
-        console.log(user);
-        res.send(user);
+        const token = await user.generateAuthToken();
+        console.log({user, token});
+        // console.log('cats')
+        //console.log(user.getPublicProfile());
+        res.send({user, token});
     } catch (e) {
         res.send(e);
     }
 
 })
 
+//log out users
+router.post('/users/logout', auth, async (req, res) => {
+    try {
+        //this filters the user token array to contain things that are not that token.
+        //console.log(req.user.tokens);
+        req.user.tokens = req.user.tokens.filter((token) => {return token.token != req.token});
+        await req.user.save();
+        res.send('You have logged out.');
+    } catch (e) {
+        res.status(500).send(e);
+    }
+})
+
+//log out all of a user's tokens
+router.post('/users/logoutall', auth, async (req, res) => {
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send('You have successfully logged out of all signed in devices');
+    } catch (e) {
+        res.status(500).send(e);
+    }
+})
+
 //get all users (NOT SAFE)
-router.get('/users',  async(req, res) => {
+//middleware runs first, then if next executes the rest of the function does
+router.get('/users', auth, async(req, res) => {
     var dateOBJ = new Date();
     var date = dateOBJ.toLocaleDateString();
     var time = dateOBJ.toLocaleTimeString();
@@ -52,6 +82,16 @@ router.get('/users',  async(req, res) => {
         
     }
 })
+
+// a user can get their profile back
+router.get('/users/me', auth, async(req, res) => {
+    var dateOBJ = new Date();
+    var date = dateOBJ.toLocaleDateString();
+    var time = dateOBJ.toLocaleTimeString();
+    res.send(req.user);
+    console.log(date + '/' + time + ': user successfully queried own profile');
+    }
+)
 
 //get one user by ID
 router.get('/users/:id', async (req, res) => {

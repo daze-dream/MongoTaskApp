@@ -1,0 +1,21 @@
+const jwt = require('jsonwebtoken');
+const User = require('../models/user')
+//-----------------------------------
+const auth = async (req, res, next) => {
+    console.log('testing middleware loading');
+    try {
+        const token = req.header('Authorization').replace('Bearer ', '');
+        const decoded = jwt.verify(token, 'anthemsux');
+        const user = await User.findOne({_id: decoded._id, 'tokens.token': token})
+        console.log(decoded);
+        if(!user) { throw new Error();};
+        //these are the variables being passed back to the route handler
+        req.token = token;
+        req.user = user;
+        next();
+    } catch (e) {
+        res.status(401).send('ERROR: This action requires logging in first.');
+    }
+}
+
+module.exports = auth;
