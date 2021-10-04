@@ -92,29 +92,21 @@ router.get('/users/:id', async (req, res) => {
 
 
 //update users
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedArray = ['name', 'password', 'email', 'age']
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
     const isValid = updates.every((update) => allowedArray.includes(update))
     if(!isValid) {
-        return res.status(400).send({'error': 'invalid params'})
+        return res.status(400).send({'error': 'invalid update params'})
     }
     try {
-        const user = await User.findById(req.params.id);
-        //const user =  await User.findByIdAndUpdate(req.params.id, req.body, {new:true, runValidators: true});
-        if(!user) {
-            console.log(date + '/' + time + ': no user found for request: ', req.params.id);
-            return res.status(404).send({'error': 'no such user found'});
-        }
+        logToConsole('attempting to update user' + req.user.email + 'with params ' + JSON.stringify(req.body));
         //this method is used instead to have access to the middleware, which findByIdAndUpdate bypasses.
         // simply iterate through the two arrays and apply them
-        updates.forEach((update) => user[update] = req.body[update])
-        await user.save()
-        console.log(date + '/' + time + ': successful update of user ' + req.params.id + ' to ' + user);
-        res.send(user);
+        updates.forEach((update) => req.user[update] = req.body[update])
+        await req.user.save()
+        logToConsole('success!')
+        res.send(req.user);
     } catch (e) {
         logToConsole('Error from request: ' + JSON.stringify(req.body))
         res.status(400).send(e);
