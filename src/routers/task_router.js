@@ -1,38 +1,53 @@
 const express = require('express')
 const Task = require('../models/task.js');
+const auth = require('../middleware/auth')
 
 const router = new express.Router()
 
 // add new task
-router.post('/tasks', async(req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
-    const task = new Task(req.body);
+router.post('/tasks', auth ,async(req, res) => {
+    //const task = new Task(req.body);
+    const task = new Task({...req.body, ownerId:req.user._id});
     try {
         await task.save();
         res.status(201).send(task);
 
-        console.log( date + '/' + time + ': Successful save task from request: ', req.body)
     } catch (e) {
-        console.log( date + '/' + time +': Error from request: ', req.body)
         res.status(400).send(e);
     }
     
 })
 
 
+// get all tasks for user
+//the route will go /tasks?options=value
+// limit and skip options
+// option of sortby=createdAt_asc/desc
+router.get('/tasks', auth,  async(req, res) => {
+    const match = {}
+    const sort = {}
+    console.log(req.query)
+    if(req.query.completed) {
+        match.completed = req.query.completed === 'true'
+    }
+    if(req.query.sortBy){
+        const parts = req.query.sortBy.split(':')
+        console.log(parts)
+        sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
+        console.log(sort)
 
-// get all tasks (NOT SAFE)
-router.get('/tasks',  async(req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
+    }
     try {
-        const tasks =  await Task.find({});
-
-        console.log(date + '/' + time + ': successful querying of all tasks');
-        res.send(tasks);
+        await req.user.populate({
+            path: 'tasks',
+            match,
+            options: {
+                limit: parseInt(req.query.limit),
+                skip: parseInt(req.query.skip),
+                sort
+            }
+        })
+        res.send(req.user.tasks);
     } catch (e) {
         console.log('internal server error', e);
         res.status(500).send()
@@ -41,51 +56,42 @@ router.get('/tasks',  async(req, res) => {
 })
 
 // get singular task
-router.get('/tasks/:id', async (req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
+router.get('/tasks/:id', auth, async (req, res) => {
     const _id = req.params.id;
     try {
-        const task = await Task.findById(_id);
+        //fetch a task that matches both the task ID and the user ID of that task.
+        console.log(req.user._id);
+        const task = await Task.findOne({_id, ownerId: req.user._id})
         if(!task){
             console.log('Bad task search by ID:', _id);
             return res.status(404).send('No task found');
         }
 
-        console.log(date + '/' + time +  ': successful single task query of id ' + _id)
         res.send(task);        
     } catch (e) {
         if(e.name === 'CastError'){
             return res.status(400).send('Invalid id')
         }
-        console.log( date + '/' + time +': internal server error', e);
         res.status(500).send(e)
         
     }
 })
 
 //update a task
-router.patch('/tasks/:id', async (req, res) => {
+router.patch('/tasks/:id', auth, async (req, res) => {
     const updates = Object.keys(req.body);
     const allowedArray = ['description', 'completed', 'tags'];
     const isValid = updates.every((update) => allowedArray.includes(update));
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
     if(!isValid) {
         return res.status(400).send({'error': 'invalid params'})
     }
     try {
-        const task = await Task.findById(req.params.id);
-        //const task = await Task.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true });
+        const task = await Task.findOne({_id: req.params.id, ownerId: req.user._id});
         if(!task) {
-            console.log(date + '/' + time + ': no task found for request: ', req.params.id);
             return res.status(404).send({'error': 'no such task exists'});
         }
         updates.forEach((update) => task[update] = req.body[update]);
         await task.save();
-        console.log(date + '/' + time + ': successful update of task ' + req.params.id + ' to ' + task);
         res.send(task)
     } catch (e) {
         console.log( date + '/' + time +': Error from request: ', req.body)
@@ -95,20 +101,15 @@ router.patch('/tasks/:id', async (req, res) => {
 })
 
 //delete task by ID
-router.delete('/tasks/:id', async (req, res) => {
-    var dateOBJ = new Date();
-    var date = dateOBJ.toLocaleDateString();
-    var time = dateOBJ.toLocaleTimeString();
+router.delete('/tasks/:id', auth, async (req, res) => {
+
     try {
-        const task = await Task.findByIdAndDelete(req.params.id);
+        const task = await Task.findOneAndDelete({_id: req.params.id, ownerId: req.user._id});
         if(!task) {
-            console.log(date + '/' + time + ": bad task deletion request with ID: ", req.params.id);
             return res.status(404).send({'error': 'no such task exists'})
         }
-        console.log(date + '/' + time + ': successful deletion of task: ', task);
         res.send(task)
     } catch (e) {
-        console.log(date + '/' + time + ': server error from request', req.body);
         res.status(500).send(e);
     }
 })

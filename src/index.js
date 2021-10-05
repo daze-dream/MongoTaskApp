@@ -2,6 +2,9 @@ const express = require('express')
 require('./db/mongoose') 
 const userRouter = require('./routers/user_router')
 const taskRouter = require('./routers/task_router')
+const multer = require('multer')
+const Task = require ('./models/task')
+const User = require ('./models/user')
 const { Mongoose } = require('mongoose');
 const { ObjectID } = require('bson');
 const { response, request, application } = require('express');
@@ -11,20 +14,24 @@ const e = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// app.use( (req, res, next) => {
-//     //this is the middleware function that runs in between a request and a route handler.
-//     // we can use this to autheticate with web tokens, using next() to proceed.
-//     console.log(req.method, req.path );
-//     if() {
-//     } else {
-//         next();
-//     }
-//     //next();
-// })
+const upload = multer({
+    dest: 'images',
+    limits: {
+        fileSize: 1000000,
+    },
+    fileFilter(req, file, cb) {
+        if(!file.originalname.match(/\.(doc|docx)$/))
+        {
+            return cb(new Error('Invalid file type. We support Word documents for this operation only'))
 
-// app.use((req, res, next) => {
-//     if(req.method != '') {res.status(503).send('SITE UNDER MAINTENANCE')}
-// })
+        }
+        cb(undefined, true);
+    }
+})
+
+app.post('/upload', upload.single('the_upload'), (req, res) => {
+    res.send();
+})
 
 app.use(express.json())
 app.use(userRouter)
@@ -33,13 +40,3 @@ app.listen( port, () => {
     console.log('listening on port ' + port);
 })
 
-// const jwt = require ('jsonwebtoken')
-
-// const myFunc = async () => {
-//     const token = jwt.sign({_id: 'temp'}, 'bigspending', {expiresIn: '7 days'});
-//     console.log(token);
-
-//     console.log(jwt.verify(token, 'bigspending'))
-// }
-
-// myFunc();
