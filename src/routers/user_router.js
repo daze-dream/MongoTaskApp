@@ -2,6 +2,8 @@ const express = require('express')
 const User = require('../models/user')
 const auth = require('../middleware/auth')
 const multer = require('multer')
+const path = require ('path')
+const sharp = require('sharp')
 //---------------------------------------------------------
 const router = new express.Router()
 
@@ -14,7 +16,6 @@ const logToConsole = (message) => {
 }
 
 const upload = multer({
-    dest: 'avatars',
     limits: {
         fileSize: 1000000
     },
@@ -27,10 +28,39 @@ const upload = multer({
     }
 })
 
-router.post('/users/me/avatar', upload.single('avatar'), async (req, res) => {
+//upload image
+router.post('/users/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+   
+    const buffer = await sharp(req.file.buffer).png().resize({width: 250, height: 250}).toBuffer()
+    req.user.avatar = buffer;
+    await req.user.save();
     res.send();
+}, (error, req, res, next) => {
+    res.status(400).send({error: error.message});
 })
 
+//delete user avatar
+router.delete('/users/me/avatar', auth, async (req, res) => {
+    req.user.avatar = undefined;
+    await req.user.save();
+    res.send();
+}, (error, req, res, next) => {
+    res.status(400).send({error: error.message});
+})
+
+//view avatar
+router.get('/users/:id/avatar',  async (req, res) =>{
+    try {
+        const user = await User.findById(req.params.id);
+        if(!user || !user.avatar){
+          throw new Error('No avatar image');
+        }
+        res.set('Content-Type','image/png');
+        res.send(user.avatar);
+    } catch (e) {
+        res.status(404).send(e);
+    }
+})
 
 //create users 
 router.post('/users', async (req, res) => {
@@ -38,9 +68,11 @@ router.post('/users', async (req, res) => {
     try{
         await user.save();
         const token = await user.generateAuthToken();
-        res.status(201).send({user, token});
+        res.cookie('auth_token',token)
+        res.sendFile(path.resolve(__dirname, '..', 'views', 'private.html'))
         logToConsole('successful creation of user ' + JSON.stringify(user))
     } catch(e) {
+        console.log(e);
         logToConsole('bad creation of user from request ' + JSON.stringify( req.body))
         res.status(400).send('This email already has an associated account with it.');
     };

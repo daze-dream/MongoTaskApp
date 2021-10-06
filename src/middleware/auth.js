@@ -5,6 +5,7 @@ const auth = async (req, res, next) => {
     console.log('testing middleware loading');
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
+        //const token = req.cookies['auth_token'];
         const decoded = jwt.verify(token, 'anthemsux');
         const user = await User.findOne({_id: decoded._id, 'tokens.token': token})
         if(!user) { throw new Error();};
