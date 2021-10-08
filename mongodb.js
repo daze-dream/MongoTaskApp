@@ -2,7 +2,7 @@ const mongodb = require('mongodb');
 //-----------------------------------------------------------------
 const mongoClient = mongodb.MongoClient;
 const ObjectID  = mongodb.ObjectId;
-const connectionURL = 'mongodb://127.0.0.1:27017';
+const connectionURL = process.env.LOCALDB_PATH;
 const databaseName = 'task-manager';
 
 mongoClient.connect(connectionURL, {useNewUrlParser:true }, (error, client) => {
