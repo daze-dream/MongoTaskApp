@@ -1,3 +1,6 @@
+# dev stuff
+config/
+
 # Logs
 logs
 *.log
