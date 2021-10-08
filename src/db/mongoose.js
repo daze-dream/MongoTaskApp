@@ -6,5 +6,5 @@ const databaseName = 'task-manager-api';
 
 console.log(process.env.LOCALDB_PATH)
 //useCreateIndex and FindAndModify are default true now
-mongoose.connect(connectionURL + '/' + databaseName, {})
+mongoose.connect(connectionURL,{})
 
