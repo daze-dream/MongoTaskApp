@@ -4,6 +4,7 @@ const auth = require('../middleware/auth')
 const multer = require('multer')
 const path = require ('path')
 const sharp = require('sharp')
+const {sendWelcomeEmail, sendCancelEmail} = require('../emails/account')
 //---------------------------------------------------------
 const router = new express.Router()
 
@@ -15,6 +16,7 @@ const logToConsole = (message) => {
     console.log(date + '/' + time + ': ' + message)
 }
 
+/**lets users upload an avatar, rescaled */
 const upload = multer({
     limits: {
         fileSize: 1000000
@@ -68,8 +70,10 @@ router.post('/users', async (req, res) => {
     try{
         await user.save();
         const token = await user.generateAuthToken();
-        res.cookie('auth_token',token)
-        res.sendFile(path.resolve(__dirname, '..', 'views', 'private.html'))
+        res.cookie('auth_token',token);
+        sendWelcomeEmail(user.email, user.name);
+        //res.sendFile(path.resolve(__dirname, '..', 'views', 'private.html'))
+        res.status(201).send({user, token});
         logToConsole('successful creation of user ' + JSON.stringify(user))
     } catch(e) {
         console.log(e);
@@ -165,6 +169,7 @@ router.patch('/users/me', auth, async (req, res) => {
 router.delete('/users/me', auth, async (req, res) => {
     try {
         logToConsole('user ' + req.user.email + ' has requested profile deletion...');
+        sendCancelEmail(req.user.email, req.user.name);
         await req.user.remove();
         res.send('Profile deleted. This cannot be undone.');
         logToConsole('successful deletion');
